@@ -1,9 +1,9 @@
 # astrewrite [![GoDoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](http://godoc.org/github.com/fatih/astrewrite) [![Build Status](http://img.shields.io/travis/fatih/astrewrite.svg?style=flat-square)](https://travis-ci.org/fatih/astrewrite)
 
-astrewrite provides a `Walk()` function, similar to `ast.Inspect()` from the
-`ast` package. The only differnce is that the passed walk function can also
+astrewrite provides a `Walk()` function, similar to [ast.Inspect()](https://godoc.org/go/ast#Inspect) from the
+[ast](https://godoc.org/go/ast) package. The only differnce is that the passed walk function can also
 return a node, which is used to rewrite the parent node.  This provides an easy
-way to rewrite a given ast.Node.
+way to rewrite a given ast.Node while walking the AST.
 
 # Example
 
