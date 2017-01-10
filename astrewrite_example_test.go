@@ -9,10 +9,10 @@ import (
 	"go/token"
 )
 
-func ExampleRewrite() {
+func ExampleWalk() {
 	src := `package main
 
-type Server struct{}`
+type Foo struct{}`
 
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, "foo.go", src, parser.ParseComments)
@@ -26,8 +26,8 @@ type Server struct{}`
 			return n, true
 		}
 
-		// change struct type name to "Microservice"
-		x.Name.Name = "Microservice"
+		// change struct type name to "Bar"
+		x.Name.Name = "Bar"
 		return x, true
 	}
 
@@ -39,5 +39,5 @@ type Server struct{}`
 	// Output:
 	// package main
 	//
-	// type Microservice struct{}
+	// type Bar struct{}
 }
