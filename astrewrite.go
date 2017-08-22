@@ -6,12 +6,12 @@ import (
 )
 
 // WalkFunc describes a function to be called for each node during a Walk. The
-// returned node can be used to rewrite the AST. Walking stops if the returned
-// bool is false.
+// returned node can be used to rewrite the AST. Returning nil will remove the node.
+// Walking stops if the returned bool is false.
 type WalkFunc func(ast.Node) (ast.Node, bool)
 
 // Walk traverses an AST in depth-first order: It starts by calling
-// fn(node); node must not be nil. It returns the rewritten node. If fn returns
+// fn(node); if node is nil, the node will be removed. It returns the rewritten node. If fn returns
 // true, Walk invokes fn recursively for each of the non-nil children of node,
 // followed by a call of fn(nil). The returned node of fn can be used to
 // rewrite the passed node to fn. Panics if the returned type is not the same
@@ -31,16 +31,22 @@ func Walk(node ast.Node, fn WalkFunc) ast.Node {
 		// nothing to do
 
 	case *ast.CommentGroup:
-		for i, c := range n.List {
-			n.List[i] = Walk(c, fn).(*ast.Comment)
+		out := n.List[:0]
+		for _, c := range n.List {
+			if c, _ = Walk(c, fn).(*ast.Comment); c != nil {
+				out = append(out, c)
+			}
 		}
+		n.List = out
 
 	case *ast.Field:
 		if n.Doc != nil {
 			n.Doc = Walk(n.Doc, fn).(*ast.CommentGroup)
 		}
 		n.Names = walkIdentList(n.Names, fn)
-		n.Type = Walk(n.Type, fn).(ast.Expr)
+		if n.Type, _ = Walk(n.Type, fn).(ast.Expr); n.Type == nil {
+			return nil
+		}
 		if n.Tag != nil {
 			n.Tag = Walk(n.Tag, fn).(*ast.BasicLit)
 		}
@@ -49,9 +55,13 @@ func Walk(node ast.Node, fn WalkFunc) ast.Node {
 		}
 
 	case *ast.FieldList:
-		for i, f := range n.List {
-			n.List[i] = Walk(f, fn).(*ast.Field)
+		out := n.List[:0]
+		for _, f := range n.List {
+			if f, _ = Walk(f, fn).(*ast.Field); f != nil {
+				out = append(out, f)
+			}
 		}
+		n.List = out
 
 	// Expressions
 	case *ast.BadExpr, *ast.Ident, *ast.BasicLit:
@@ -59,16 +69,20 @@ func Walk(node ast.Node, fn WalkFunc) ast.Node {
 
 	case *ast.Ellipsis:
 		if n.Elt != nil {
-			n.Elt = Walk(n.Elt, fn).(ast.Expr)
+			if n.Elt, _ = Walk(n.Elt, fn).(ast.Expr); n.Elt == nil {
+				return nil
+			}
 		}
 
 	case *ast.FuncLit:
-		n.Type = Walk(n.Type, fn).(*ast.FuncType)
+		if n.Type, _ = Walk(n.Type, fn).(*ast.FuncType); n.Type == nil {
+			return nil
+		}
 		n.Body = Walk(n.Body, fn).(*ast.BlockStmt)
 
 	case *ast.CompositeLit:
 		if n.Type != nil {
-			n.Type = Walk(n.Type, fn).(ast.Expr)
+			n.Type, _ = Walk(n.Type, fn).(ast.Expr)
 		}
 		n.Elts = walkExprList(n.Elts, fn)
 
@@ -102,7 +116,9 @@ func Walk(node ast.Node, fn WalkFunc) ast.Node {
 		}
 
 	case *ast.CallExpr:
-		n.Fun = Walk(n.Fun, fn).(ast.Expr)
+		if n.Fun, _ = Walk(n.Fun, fn).(ast.Expr); n.Fun == nil {
+			return nil
+		}
 		n.Args = walkExprList(n.Args, fn)
 
 	case *ast.StarExpr:
@@ -122,37 +138,54 @@ func Walk(node ast.Node, fn WalkFunc) ast.Node {
 	// Types
 	case *ast.ArrayType:
 		if n.Len != nil {
-			n.Len = Walk(n.Len, fn).(ast.Expr)
+			if n.Len, _ = Walk(n.Len, fn).(ast.Expr); n.Len == nil {
+				return nil
+			}
 		}
-		n.Elt = Walk(n.Elt, fn).(ast.Expr)
+		if n.Elt, _ = Walk(n.Elt, fn).(ast.Expr); n.Elt == nil {
+			return nil
+		}
 
 	case *ast.StructType:
-		n.Fields = Walk(n.Fields, fn).(*ast.FieldList)
+		if n.Fields, _ = Walk(n.Fields, fn).(*ast.FieldList); n.Fields == nil {
+			return nil
+		}
 
 	case *ast.FuncType:
+		// allow changing the params and/or results or completely removing them
 		if n.Params != nil {
-			n.Params = Walk(n.Params, fn).(*ast.FieldList)
+			n.Params, _ = Walk(n.Params, fn).(*ast.FieldList)
 		}
 		if n.Results != nil {
-			n.Results = Walk(n.Results, fn).(*ast.FieldList)
+			n.Results, _ = Walk(n.Results, fn).(*ast.FieldList)
 		}
 
 	case *ast.InterfaceType:
-		n.Methods = Walk(n.Methods, fn).(*ast.FieldList)
+		if n.Methods, _ = Walk(n.Methods, fn).(*ast.FieldList); n.Methods == nil {
+			return nil
+		}
 
 	case *ast.MapType:
-		n.Key = Walk(n.Key, fn).(ast.Expr)
-		n.Value = Walk(n.Value, fn).(ast.Expr)
+		if n.Key, _ = Walk(n.Key, fn).(ast.Expr); n.Key == nil {
+			return nil
+		}
+		if n.Value, _ = Walk(n.Value, fn).(ast.Expr); n.Value == nil {
+			return nil
+		}
 
 	case *ast.ChanType:
-		n.Value = Walk(n.Value, fn).(ast.Expr)
+		if n.Value, _ = Walk(n.Value, fn).(ast.Expr); n.Value == nil {
+			return
+		}
 
 	// Statements
 	case *ast.BadStmt:
 		// nothing to do
 
 	case *ast.DeclStmt:
-		n.Decl = Walk(n.Decl, fn).(ast.Decl)
+		if n.Decl, _ = Walk(n.Decl, fn).(ast.Decl); n.Decl == nil {
+			return nil
+		}
 
 	case *ast.EmptyStmt:
 		// nothing to do
@@ -162,7 +195,9 @@ func Walk(node ast.Node, fn WalkFunc) ast.Node {
 		n.Stmt = Walk(n.Stmt, fn).(ast.Stmt)
 
 	case *ast.ExprStmt:
-		n.X = Walk(n.X, fn).(ast.Expr)
+		if n.X, _ = Walk(n.X, fn).(ast.Expr); n.X == nil {
+			return nil
+		}
 
 	case *ast.SendStmt:
 		n.Chan = Walk(n.Chan, fn).(ast.Expr)
