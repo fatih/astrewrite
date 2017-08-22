@@ -40,9 +40,6 @@ func Walk(node ast.Node, fn WalkFunc) ast.Node {
 		n.List = out
 
 	case *ast.Field:
-		if n.Doc != nil {
-			n.Doc = Walk(n.Doc, fn).(*ast.CommentGroup)
-		}
 		n.Names = walkIdentList(n.Names, fn)
 		if n.Type, _ = Walk(n.Type, fn).(ast.Expr); n.Type == nil {
 			return nil
@@ -50,11 +47,17 @@ func Walk(node ast.Node, fn WalkFunc) ast.Node {
 		if n.Tag != nil {
 			n.Tag = Walk(n.Tag, fn).(*ast.BasicLit)
 		}
+		if n.Doc != nil {
+			n.Doc = Walk(n.Doc, fn).(*ast.CommentGroup)
+		}
 		if n.Comment != nil {
 			n.Comment = Walk(n.Comment, fn).(*ast.CommentGroup)
 		}
 
 	case *ast.FieldList:
+		if len(n.List) == 0 {
+			break
+		}
 		out := n.List[:0]
 		for _, f := range n.List {
 			if f, _ = Walk(f, fn).(*ast.Field); f != nil {
@@ -163,9 +166,7 @@ func Walk(node ast.Node, fn WalkFunc) ast.Node {
 		}
 
 	case *ast.InterfaceType:
-		if n.Methods, _ = Walk(n.Methods, fn).(*ast.FieldList); n.Methods == nil {
-			return nil
-		}
+		n.Methods, _ = Walk(n.Methods, fn).(*ast.FieldList)
 
 	case *ast.MapType:
 		if n.Key, _ = Walk(n.Key, fn).(ast.Expr); n.Key == nil {
@@ -317,9 +318,6 @@ func Walk(node ast.Node, fn WalkFunc) ast.Node {
 		}
 
 	case *ast.TypeSpec:
-		if n.Doc != nil {
-			n.Doc = Walk(n.Doc, fn).(*ast.CommentGroup)
-		}
 		Walk(n.Name, fn)
 		Walk(n.Type, fn)
 		if n.Comment != nil {
@@ -330,19 +328,16 @@ func Walk(node ast.Node, fn WalkFunc) ast.Node {
 		// nothing to do
 
 	case *ast.GenDecl:
-		if n.Doc != nil {
-			n.Doc = Walk(n.Doc, fn).(*ast.CommentGroup)
-		}
-		for i, s := range n.Specs {
+		specs := n.Specs[:0]
+		for _, s := range n.Specs {
 			s, _ = Walk(s, fn).(ast.Spec)
 			if s != nil {
-				n.Specs[i] = s
-				continue
+				specs = append(specs, s)
 			}
-			n.Specs = append(n.Specs[:i], n.Specs[i+1:]...)
 		}
-		if len(n.Specs) == 0 {
-			return nil
+		n.Specs = specs
+		if n.Doc != nil {
+			n.Doc = Walk(n.Doc, fn).(*ast.CommentGroup)
 		}
 	case *ast.FuncDecl:
 		if n.Doc != nil {
