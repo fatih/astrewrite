@@ -328,6 +328,9 @@ func Walk(node ast.Node, fn WalkFunc) ast.Node {
 		// nothing to do
 
 	case *ast.GenDecl:
+		if len(n.Specs) == 0 {
+			break
+		}
 		specs := n.Specs[:0]
 		for _, s := range n.Specs {
 			s, _ = Walk(s, fn).(ast.Spec)
@@ -335,7 +338,9 @@ func Walk(node ast.Node, fn WalkFunc) ast.Node {
 				specs = append(specs, s)
 			}
 		}
-		n.Specs = specs
+		if n.Specs = specs; len(n.Specs) == 0 {
+			return nil
+		}
 		if n.Doc != nil {
 			n.Doc = Walk(n.Doc, fn).(*ast.CommentGroup)
 		}
