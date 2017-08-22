@@ -175,7 +175,7 @@ func Walk(node ast.Node, fn WalkFunc) ast.Node {
 
 	case *ast.ChanType:
 		if n.Value, _ = Walk(n.Value, fn).(ast.Expr); n.Value == nil {
-			return
+			return nil
 		}
 
 	// Statements
