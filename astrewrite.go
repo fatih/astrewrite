@@ -61,7 +61,9 @@ func Walk(node ast.Node, fn WalkFunc) ast.Node {
 				out = append(out, f)
 			}
 		}
-		n.List = out
+		if n.List = out; len(n.List) == 0 {
+			return nil
+		}
 
 	// Expressions
 	case *ast.BadExpr, *ast.Ident, *ast.BasicLit:
