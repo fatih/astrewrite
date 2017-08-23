@@ -17,6 +17,9 @@ type WalkFunc func(ast.Node) (ast.Node, bool)
 // rewrite the passed node to fn. Panics if the returned type is not the same
 // type as the original one.
 func Walk(node ast.Node, fn WalkFunc) ast.Node {
+	if node == nil {
+		return node
+	}
 	rewritten, ok := fn(node)
 	if !ok {
 		return rewritten
@@ -44,14 +47,16 @@ func Walk(node ast.Node, fn WalkFunc) ast.Node {
 		if n.Type, _ = Walk(n.Type, fn).(ast.Expr); n.Type == nil {
 			return nil
 		}
+
 		if n.Tag != nil {
-			n.Tag = Walk(n.Tag, fn).(*ast.BasicLit)
+			n.Tag, _ = Walk(n.Tag, fn).(*ast.BasicLit)
 		}
+
 		if n.Doc != nil {
-			n.Doc = Walk(n.Doc, fn).(*ast.CommentGroup)
+			n.Doc, _ = Walk(n.Doc, fn).(*ast.CommentGroup)
 		}
 		if n.Comment != nil {
-			n.Comment = Walk(n.Comment, fn).(*ast.CommentGroup)
+			n.Comment, _ = Walk(n.Comment, fn).(*ast.CommentGroup)
 		}
 
 	case *ast.FieldList:
