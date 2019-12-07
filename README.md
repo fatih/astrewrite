@@ -1,3 +1,8 @@
+This project is archived and not maintained. There is a better implementation
+and solution in the
+[`golang.org/x/tools/go/ast/astutil`](https://pkg.go.dev/golang.org/x/tools/go/ast/astutil?tab=doc#Apply)
+package that you can use.
+
 # astrewrite [![GoDoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](http://godoc.org/github.com/fatih/astrewrite) [![Build Status](http://img.shields.io/travis/fatih/astrewrite.svg?style=flat-square)](https://travis-ci.org/fatih/astrewrite)
 
 astrewrite provides a `Walk()` function, similar to [ast.Inspect()](https://godoc.org/go/ast#Inspect) from the
